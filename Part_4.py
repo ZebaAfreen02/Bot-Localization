@@ -10,12 +10,10 @@ from constants import DIMENSION, CELL_OBSTACLE
 from directions import DIRECTIONS
 
 #estimate how many steps the bot will need to localize from a given belief set
-def estimate_cost(model, belief_set, map_shape=(30, 30)):
-    grid = np.zeros(map_shape, dtype=np.float32)
+def estimate_cost(model, belief_set, maze):
+    grid = (np.asarray(maze) == CELL_OBSTACLE).astype(np.float32)
     for (i, j) in belief_set:
-        grid[i][j] = -1  # belief
-    grid[grid == 0] = 0.0
-    grid[grid == -1] = 0.5
+        grid[i, j] = 0.5
     input_tensor = torch.tensor(grid, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
     with torch.no_grad():
         pred = model(input_tensor).item()
@@ -27,7 +25,7 @@ def policy_pi1(L, model, maze):
 
     for dir in directions:
         L_next = bot_move(maze, L, dir)
-        cost = estimate_cost(model, L_next)
+        cost = estimate_cost(model, L_next, maze)
         costs[dir] = cost
 
     best_action = min(costs, key=costs.get)
@@ -67,6 +65,13 @@ def compare_pi0_pi1(model, num_trials=30):
     return avg_moves_pi0, avg_moves_pi1
 
 
+def print_policy_comparison(*policy_averages):
+    print("Mean localization moves by initial belief-set size")
+    print(f"{'Belief size':>11}" + "".join(f"{f'pi{index}':>10}" for index in range(len(policy_averages))))
+    for size, averages in enumerate(zip(*policy_averages), start=2):
+        print(f"{size:>11}" + "".join(f"{average:>10.2f}" for average in averages))
+
+
 if __name__ == "__main__":
     # Load  trained model 
     model = ConvLocalizationRegressor()
@@ -74,6 +79,7 @@ if __name__ == "__main__":
     model.eval()
 # Run comparison 
     avg_moves_pi0, avg_moves_pi1 = compare_pi0_pi1(model)
+    print_policy_comparison(avg_moves_pi0, avg_moves_pi1)
 
     
         

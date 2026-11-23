@@ -60,7 +60,7 @@ Built a convolutional neural network to estimate the number of moves remaining b
 
 **Architecture:**
 
-- Input: 30 × 30 belief-state grid
+- Input: one 30 × 30 channel with walls encoded as `1.0`, possible robot positions as `0.5`, and other open cells as `0.0`
 - Convolutional layer: 16 filters, 3 × 3 kernel
 - ReLU activation and max pooling
 - Convolutional layer: 32 filters, 3 × 3 kernel
@@ -77,6 +77,8 @@ Built a convolutional neural network to estimate the number of moves remaining b
 - Epochs: 100
 
 The CNN predicts localization cost rather than the robot's exact position.
+
+Inference now uses the known maze layout and the same encoding as training. The original inference code marked only possible robot positions, so walls and other open cells both appeared as zero. The corrected input has the same shape and uses the same CNN architecture.
 
 ### 5. Learning-Guided Policy Improvement
 
@@ -100,7 +102,9 @@ The updated estimator guides the next action, after which the policy follows the
 
 This approach illustrates how learned cost estimates can guide search decisions without replacing the underlying localization algorithm.
 
-## Results
+## Original course-project results
+
+The following observations come from the original course project, before the inference input correction.
 
 - Generated 47,570 training examples from 200 mazes.
 - Trained a CNN to estimate remaining localization moves.
@@ -109,6 +113,8 @@ This approach illustrates how learned cost estimates can guide search decisions 
 - Found that the learning-guided policies generally reduced localization steps compared with the baseline, although performance varied between trials and belief-set sizes.
 
 The experiments demonstrate the potential of combining traditional search with learned cost estimates for sequential decision-making.
+
+The original datasets and checkpoints are absent from this repository. The scripts use random maze generation, belief-set sampling, and train/test splits, so a fresh run may produce different sample counts and metrics. The corrected inference can change the actions chosen by π₁ and π₂. To evaluate the corrected π₂ pipeline, generate π₁ training data using the corrected inference and train the π₁ estimator on those data. The baseline checkpoint architecture is compatible with the corrected input. The three-policy comparison skips failed trials and may average different trial counts for each policy.
 
 ## Repository Structure
 
@@ -132,11 +138,27 @@ The experiments demonstrate the potential of combining traditional search with l
 
 The project consists of multiple Python scripts that depend on generated data and trained model checkpoints.
 
-**Install dependencies:**
+**Install dependencies**
 
-```bash
-pip install -r requirements.txt
+Use Python 3.12 and a virtual environment on a platform with compatible PyTorch wheels. The scripts run on CPU and do not require a GPU. Use the [PyTorch installation selector](https://pytorch.org/get-started/locally/) for your operating system and compute platform if you need a platform-specific wheel.
+
+Windows PowerShell, from the repository root:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\Activate.ps1
 ```
+
+macOS and Linux, from the repository root:
+
+```sh
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+If PowerShell blocks activation, replace `python` in the commands below with `.\.venv\Scripts\python.exe`.
 
 **Generate the baseline dataset:**
 
@@ -152,7 +174,15 @@ This produces `mixed_train_data.npz`.
 python Training.py
 ```
 
-This produces `localization_cnn_model.pt`.
+This prints training and validation mean squared error (MSE) per epoch and produces `localization_cnn_model.pt`.
+
+**Compare π₀ and π₁:**
+
+```bash
+python Part_4.py
+```
+
+This prints mean localization moves for each initial belief-set size from 2 to 30.
 
 **Train the improved cost estimator:**
 
@@ -160,13 +190,15 @@ This produces `localization_cnn_model.pt`.
 python PI1_model.py
 ```
 
-This produces `localization_pi1_model.pt`.
+This prints training and validation MSE per epoch and produces `pi1_train_data.npz` and `localization_pi1_model.pt`.
 
 **Compare the localization policies:**
 
 ```bash
 python Pi2.py
 ```
+
+This prints the corresponding mean-moves table for π₀, π₁, and π₂.
 
 The scripts are research-oriented implementations rather than a packaged application. The commands above reflect the intended dependency order; execution has not been independently verified in a clean environment.
 

@@ -7,6 +7,7 @@ from environment import create_maze
 from part_2_belief_sets import *
 from L_next import *
 from PI1_model import ConvLocalizationRegressor, get_belief_map, estimate_cost
+from Part_4 import print_policy_comparison
 from constants import *
 
 
@@ -25,7 +26,7 @@ def run_pi1(L, model, maze):
     costs = {}
     for dir in directions:
         L_next = bot_move(maze, L, dir)
-        cost = estimate_cost(model, L_next)
+        cost = estimate_cost(model, L_next, maze)
         costs[dir] = cost
 
     best_action = min(costs, key=costs.get)
@@ -39,7 +40,7 @@ def run_pi2(L, C1_model, C0_model, maze):
     costs = {}
     for dir in directions:
         L_next = bot_move(maze, L, dir)
-        cost = estimate_cost(C1_model, L_next)
+        cost = estimate_cost(C1_model, L_next, maze)
         costs[dir] = cost
 
     best_action = min(costs, key=costs.get)
@@ -50,7 +51,7 @@ def run_pi2(L, C1_model, C0_model, maze):
     inner_costs = {}
     for dir in directions_pi1:
         inner_L = bot_move(maze, L_updated, dir)
-        cost = estimate_cost(C0_model, inner_L)
+        cost = estimate_cost(C0_model, inner_L, maze)
         inner_costs[dir] = cost
 
     inner_best = min(inner_costs, key=inner_costs.get)
@@ -93,6 +94,7 @@ def compare_all_policies(num_trials=20):
 if __name__ == "__main__":
     
     avg0, avg1, avg2 = compare_all_policies(num_trials=20)
+    print_policy_comparison(avg0, avg1, avg2)
 
 
    

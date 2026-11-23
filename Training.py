@@ -50,6 +50,11 @@ class ConvLocalizationRegressor(nn.Module):
     def forward(self, x):
         return self.net(x)
 
+
+def print_epoch_mse(epoch, epochs, train_mse, validation_mse):
+    print(f"Epoch {epoch:>3}/{epochs} | Train MSE: {train_mse:.6f} | Validation MSE: {validation_mse:.6f}")
+
+
 if __name__ == "__main__":
     model = ConvLocalizationRegressor()
     criterion = nn.MSELoss()
@@ -82,6 +87,7 @@ if __name__ == "__main__":
 
         avg_test_loss = total_test_loss / len(test_loader.dataset)
         test_losses.append(avg_test_loss)
+        print_epoch_mse(epoch + 1, epochs, avg_train_loss, avg_test_loss)
 
     # Save model
     torch.save(model.state_dict(), "localization_cnn_model.pt")

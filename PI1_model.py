@@ -2,7 +2,7 @@ from environment import create_maze
 from part_2_belief_sets import *
 from Part_4 import estimate_cost
 from L_next import bot_move
-from Training import ConvLocalizationRegressor
+from Training import ConvLocalizationRegressor, print_epoch_mse
 from constants import *
 import torch
 import torch.nn as nn
@@ -37,7 +37,7 @@ def generate_pi1_training_data(model, num_episodes=200):
 
         for dir in directions:
             L_next = bot_move(maze, L, dir)
-            cost = estimate_cost(model, L_next)
+            cost = estimate_cost(model, L_next, maze)
             costs[dir] = cost
 
         best_action = min(costs, key=costs.get)
@@ -75,7 +75,8 @@ def train_pi1_model(data):
     train_losses = []
     test_losses = []
     #Train for 50 epochs
-    for epoch in range(50):
+    epochs = 50
+    for epoch in range(epochs):
         model.train()
         total_train_loss = 0
         for xb, yb in train_loader:
@@ -96,6 +97,7 @@ def train_pi1_model(data):
                 loss = criterion(pred, yb)
                 total_test_loss += loss.item() * xb.size(0)
         test_losses.append(total_test_loss / len(test_loader.dataset))
+        print_epoch_mse(epoch + 1, epochs, train_losses[-1], test_losses[-1])
        
     # Save model
     torch.save(model.state_dict(), "localization_pi1_model.pt")
